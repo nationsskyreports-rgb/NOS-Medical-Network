@@ -20,8 +20,13 @@ const PROVIDER_TYPES: ProviderTypeKey[] = [
 ];
 
 const GOVERNORATES_EN = [
-  'Alexandria', 'Aswan', 'Assuit', 'Beheira', 'Dakahlia',
-  'Giza', 'Ismailia', 'Luxor', 'Red Sea',
+  'Al Wadi Al Gadid', 'Alexandria', 'Assuit', 'Aswan',
+  'Bani Sweif', 'Beheira', 'Beni Suef', 'Cairo',
+  'Dakhlia', 'Damietta', 'Fayoum', 'Gharbia',
+  'Giza', 'Ismailia', 'Kafr Al Sheikh', 'Luxor',
+  'Marsa Matrouh', 'Menoufia', 'Minya', 'North Sinai',
+  'Port Said', 'Qalubiya', 'Qena', 'Red Sea',
+  'Sharkeya', 'Sohag', 'South Sinai', 'Suez',
 ];
 
 export default function SearchFilters({ filters, onChange, locale, showFilters, onToggleFilters }: SearchFiltersProps) {
