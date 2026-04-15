@@ -1,0 +1,33 @@
+{
+  "name": "Medical Network Finder",
+  "short_name": "MedNetwork",
+  "description": "Find your nearest MetLife insured medical provider",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "categories": ["health", "medical"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nearby Providers",
+      "url": "/?nearby=true",
+      "description": "Find providers near your location"
+    }
+  ]
+}
