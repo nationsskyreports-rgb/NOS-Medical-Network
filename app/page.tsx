@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LocateFixed, Map as MapIcon, List, Languages, Settings, Loader as Loader2, CircleAlert as AlertCircle, ShieldCheck } from 'lucide-react';
+import SplashScreen from '@/components/SplashScreen';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type { Provider, NearbyProvider, ProviderFilters } from '@/lib/database.types';
@@ -165,6 +166,11 @@ export default function HomePage() {
   };
 
   const noFilterActive = !hasActiveFilter(filters) && !nearbyMode;
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="flex flex-col h-screen bg-gray-50">
