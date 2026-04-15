@@ -30,6 +30,7 @@ export default function MapView({
   const userMarkerRef = useRef<import('leaflet').Marker | null>(null);
   const isAr = locale === 'ar';
 
+  // Init map
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!containerRef.current) return;
@@ -52,6 +53,11 @@ export default function MapView({
         maxZoom: 19,
       }).addTo(map);
 
+      // Fix mobile size issue
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+
       mapRef.current = map;
     });
 
@@ -63,6 +69,17 @@ export default function MapView({
     };
   }, []);
 
+  // Update center when filter changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.setView(center, zoom, { animate: true });
+    // Fix size after view change
+    setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 300);
+  }, [center, zoom]);
+
+  // Update markers
   useEffect(() => {
     if (!mapRef.current) return;
     import('leaflet').then((L) => {
@@ -127,6 +144,7 @@ export default function MapView({
     });
   }, [providers, isAr, onProviderSelect]);
 
+  // Selected provider
   useEffect(() => {
     if (!mapRef.current || !selectedProvider?.lat || !selectedProvider?.lng) return;
     mapRef.current.setView([selectedProvider.lat, selectedProvider.lng], 15, { animate: true });
@@ -134,6 +152,7 @@ export default function MapView({
     marker?.openPopup();
   }, [selectedProvider]);
 
+  // User location
   useEffect(() => {
     if (!mapRef.current || !userLocation) return;
     import('leaflet').then((L) => {
@@ -160,7 +179,7 @@ export default function MapView({
     <div
       ref={containerRef}
       className="w-full h-full rounded-lg overflow-hidden"
-      style={{ minHeight: '300px' }}
+      style={{ minHeight: '300px', height: '100%' }}
     />
   );
 }
