@@ -20,8 +20,11 @@ const MapView = dynamic(() => import('@/components/MapView'), {
   ),
 });
 
-
 type ViewMode = 'split' | 'map' | 'list';
+
+function hasActiveFilter(filters: ProviderFilters): boolean {
+  return !!(filters.cardType || filters.typeKey || filters.governorate || filters.search);
+}
 
 export default function HomePage() {
   const { locale, setLocale, isRTL } = useLocale();
@@ -42,6 +45,12 @@ export default function HomePage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProviders = useCallback(async (currentFilters: ProviderFilters) => {
+    // لو مفيش فلتر، مجيبش حاجة
+    if (!hasActiveFilter(currentFilters)) {
+      setProviders([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -66,7 +75,8 @@ export default function HomePage() {
         );
       }
 
-      const { data, error: dbError } = await query.limit(100);
+      // بدون ليميت لما يكون في فلتر
+      const { data, error: dbError } = await query;
       if (dbError) throw dbError;
       setProviders(data || []);
 
@@ -94,7 +104,7 @@ export default function HomePage() {
         filter_card_type: currentFilters.cardType || null,
         filter_type_key: currentFilters.typeKey || null,
         filter_governorate: currentFilters.governorate || null,
-        result_limit: 50,
+        result_limit: 500,
       });
       if (dbError) throw dbError;
       setProviders(data || []);
@@ -153,6 +163,8 @@ export default function HomePage() {
     setFilters(newFilters);
     if (nearbyMode) setNearbyMode(false);
   };
+
+  const noFilterActive = !hasActiveFilter(filters) && !nearbyMode;
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="flex flex-col h-screen bg-gray-50">
@@ -248,6 +260,8 @@ export default function HomePage() {
               <span className="text-xs font-medium text-gray-500">
                 {loading
                   ? t.loading
+                  : noFilterActive
+                  ? ''
                   : `${providers.length} ${isRTL ? 'مقدم خدمة' : 'providers found'}`}
               </span>
               {nearbyMode && (
@@ -261,6 +275,25 @@ export default function HomePage() {
               {loading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="animate-spin text-blue-500" size={28} />
+                </div>
+              ) : noFilterActive ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                  <div className="text-5xl mb-4">🔍</div>
+                  <p className="text-sm font-semibold text-gray-700">
+                    {isRTL ? 'ابدأ بالبحث أو اختر فلتر' : 'Search or select a filter to get started'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {isRTL
+                      ? 'اختر محافظة، نوع الخدمة، أو نوع الكارت'
+                      : 'Filter by governorate, provider type, or card type'}
+                  </p>
+                  <button
+                    onClick={handleNearby}
+                    className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <LocateFixed size={13} />
+                    {isRTL ? 'أو ابحث بالقرب منك' : 'Or find providers near you'}
+                  </button>
                 </div>
               ) : providers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
