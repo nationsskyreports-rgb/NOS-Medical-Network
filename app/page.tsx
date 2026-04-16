@@ -223,7 +223,7 @@ export default function HomePage() {
             </button>
 
             <div className="flex items-center gap-1 ms-auto">
-              {(['list', 'split', 'map'] as ViewMode[]).map((mode) => (
+              {(['list', 'map'] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
