@@ -44,8 +44,9 @@ export interface NearbyProvider extends Provider {
 export interface ProviderFilters {
   cardType?: CardType | '';
   typeKey?: ProviderTypeKey | '';
-  governorate?: string;
-  search?: string;
+governorate?: string;
+city?: string;
+search?: string;
 }
 
 export type Database = {
