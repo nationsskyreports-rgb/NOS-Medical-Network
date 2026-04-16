@@ -79,7 +79,6 @@ export default function HomePage() {
         );
       }
 
-      // بدون ليميت لما يكون في فلتر
       const { data, error: dbError } = await query;
       if (dbError) throw dbError;
       setProviders(data || []);
