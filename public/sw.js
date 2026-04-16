@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medical-network-v1';
+const CACHE_NAME = 'medical-network-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
