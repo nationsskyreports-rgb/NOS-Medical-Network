@@ -36,7 +36,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
       .eq('is_active', true)
       .then(({ data }) => {
         if (data) {
-          const unique = [...new Set(data.map(d => d.governorate_en).filter(Boolean))].sort();
+          const unique = Array.from(new Set(data.map(d => d.governorate_en).filter(Boolean))).sort();
           setGovernorates(unique);
         }
       });
@@ -55,7 +55,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
       .eq('governorate_en', filters.governorate)
       .then(({ data }) => {
         if (data) {
-          const unique = [...new Set(data.map(d => d.city_en).filter(Boolean))].sort();
+          const unique = Array.from(new Set(data.map(d => d.city_en).filter(Boolean))).sort();
           setCities(unique);
         }
       });
