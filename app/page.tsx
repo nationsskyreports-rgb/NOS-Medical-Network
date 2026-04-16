@@ -70,6 +70,9 @@ export default function HomePage() {
       if (currentFilters.governorate) {
         query = query.eq('governorate_en', currentFilters.governorate);
       }
+      if (currentFilters.city) {
+  query = query.eq('city_en', currentFilters.city);
+}
       if (currentFilters.search) {
         query = query.or(
           `name_en.ilike.%${currentFilters.search}%,name_ar.ilike.%${currentFilters.search}%,city_en.ilike.%${currentFilters.search}%,speciality_en.ilike.%${currentFilters.search}%`
