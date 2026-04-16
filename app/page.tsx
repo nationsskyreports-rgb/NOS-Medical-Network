@@ -197,12 +197,6 @@ export default function HomePage() {
               <Languages size={14} />
               {locale === 'en' ? 'عربي' : 'English'}
             </button>
-            <Link
-              href="/admin"
-              className="h-8 w-8 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center"
-            >
-              <Settings size={15} />
-            </Link>
           </div>
         </div>
 
