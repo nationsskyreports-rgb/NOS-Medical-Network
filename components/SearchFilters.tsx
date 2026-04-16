@@ -1,9 +1,11 @@
 'use client';
 
 import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { ProviderFilters, CardType, ProviderTypeKey } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
 
 interface SearchFiltersProps {
   filters: ProviderFilters;
@@ -19,59 +21,52 @@ const PROVIDER_TYPES: ProviderTypeKey[] = [
   'physician', 'dentist', 'optics', 'physiotherapy', 'clinic', 'other',
 ];
 
-const GOVERNORATES_EN = [
-  'Al Wadi Al Gadid', 'Alexandria', 'Assuit', 'Aswan',
-  'Bani Sweif', 'Beheira', 'Beni Suef', 'Cairo',
-  'Dakhlia', 'Damietta', 'Fayoum', 'Gharbia',
-  'Giza', 'Ismailia', 'Kafr Al Sheikh', 'Luxor',
-  'Marsa Matrouh', 'Menoufia', 'Minya', 'North Sinai',
-  'Port Said', 'Qalubiya', 'Qena', 'Red Sea',
-  'Sharkeya', 'Sohag', 'South Sinai', 'Suez',
-];
-
-const CITIES_BY_GOV: Record<string, string[]> = {
-  'Al Wadi Al Gadid': ['Al Wadi Al Gadid'],
-  'Alexandria': ['Agamy', 'Al Asafra', 'Al Mandara', 'Azareta', 'Bab Sharq', 'Bolkeley', 'Burj Al Arab', 'Cleopatra', 'El Hadra', 'Fleming', 'Gleem', 'Hanoville', 'Ibrahimia', 'Kafr Abdo', 'Loran', 'Miami', 'Moharam Bek', 'Montazah', 'Mustafa Kamel', 'Raml Station', 'Roshdy', 'Saba Pasha', 'San Stefano', 'Semouha', 'Sidi Beshr', 'Sidi Gaber', 'Sporting', 'Victoria', 'Zizinia'],
-  'Assuit': ['Assuit'],
-  'Aswan': ['Aswan', 'Edfo', 'Kom', 'Komombo'],
-  'Bani Sweif': ['Bani Sweif'],
-  'Beheira': ['Damanhur', 'Edco', 'Housh Issa', 'Kafr El Dawar', 'Noubaria', 'Rashid'],
-  'Beni Suef': ['Beni Suef', 'Beba', 'El Wasta', 'Fashin'],
-  'Cairo': ['Abbasseya', 'Ain Shams', 'Badr City', 'Dokki', 'El Rehab', 'El Sherouk', 'Fifth Settlement', 'Garden City', 'Heliopolis', 'Helwan', 'Katamia', 'Maadi', 'Madinaty', 'Manial', 'Matariya', 'Mohandiseen', 'Mokatam', 'Nasr City', 'New Cairo', 'Ramses', 'Roxy', 'Sayeda Zeinab', 'Sheikh Zayed', 'Sheraton', 'Shobra', 'Shorouk', 'Zamalek', 'Zahraa El Maadi'],
-  'Dakhlia': ['Aga', 'Dekernes', 'Mansoura', 'Manzala', 'Mit Ghamr', 'Sherbeen', 'Sinblaween', 'Talkha'],
-  'Damietta': ['Damietta', 'Farscour', 'New Damietta', 'Ras El Bar'],
-  'Fayoum': ['Fayoum', 'Ibsheway'],
-  'Gharbia': ['Kafr El Zayat', 'Mahalla El-Kubra', 'Tanta', 'Zefta', 'Qotour', 'Santa'],
-  'Giza': ['6th October City', 'Agouza', 'Badrashin', 'Boulak Al Dakrour', 'Dokki', 'Embaba', 'Faisal', 'Giza', 'Hadaiek October', 'Haram', 'Kerdasa', 'Mohandiseen', 'Omrania', 'Sheikh Zayed'],
-  'Ismailia': ['Faied', 'Ismailia', 'Quantarah'],
-  'Kafr Al Sheikh': ['Desouk', 'Kafr Al Sheikh', 'Sedy Salem'],
-  'Luxor': ['Esna', 'Luxor City'],
-  'Marsa Matrouh': ['Al Alamien', 'Marsa Matrouh'],
-  'Menoufia': ['Ashmoon', 'Menouf', 'Quesna', 'Sadat City', 'Shebin ElKoum', 'Talla'],
-  'Minya': ['Bani Mazar', 'Maghagha', 'Malawy', 'Minya', 'New Minya', 'Samalut'],
-  'North Sinai': ['Al Arish'],
-  'Port Said': ['Port Fouad', 'Port Said'],
-  'Qalubiya': ['Banha', 'El Kanater El Khairia', 'El Obour', 'Kafr Shokr', 'Khanka', 'Mostorod', 'Qaha', 'Shibin El Qanatir', 'Shoubra El Kheima', 'Toukh'],
-  'Qena': ['Dishna', 'Keft', 'Nag Hammadi', 'Qena', 'Qous'],
-  'Red Sea': ['Gouna', 'Hurghada', 'Marsa Alam', 'Ras Ghareb', 'Safaga'],
-  'Sharkeya': ['10th of Ramadan', 'Abu Hammad', 'Belbeis', 'Faqous', 'Minya Al Qamh', 'Zagazig'],
-  'Sohag': ['Gerga', 'Sohag', 'Tahta', 'Tama'],
-  'South Sinai': ['Sharm El Shaikh'],
-  'Suez': ['Suez', 'Shokhna'],
-};
-
 export default function SearchFilters({ filters, onChange, locale, showFilters, onToggleFilters }: SearchFiltersProps) {
   const t = translations[locale];
   const isAr = locale === 'ar';
 
-  const cities = filters.governorate ? (CITIES_BY_GOV[filters.governorate] || []) : [];
-  const hasActiveFilters = filters.cardType || filters.typeKey || filters.governorate || (filters as any).city;
+  const [governorates, setGovernorates] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+
+  // جيب المحافظات من Supabase
+  useEffect(() => {
+    supabase
+      .from('providers')
+      .select('governorate_en')
+      .eq('is_active', true)
+      .then(({ data }) => {
+        if (data) {
+          const unique = [...new Set(data.map(d => d.governorate_en).filter(Boolean))].sort();
+          setGovernorates(unique);
+        }
+      });
+  }, []);
+
+  // جيب المدن لما تتغير المحافظة
+  useEffect(() => {
+    if (!filters.governorate) {
+      setCities([]);
+      return;
+    }
+    supabase
+      .from('providers')
+      .select('city_en')
+      .eq('is_active', true)
+      .eq('governorate_en', filters.governorate)
+      .then(({ data }) => {
+        if (data) {
+          const unique = [...new Set(data.map(d => d.city_en).filter(Boolean))].sort();
+          setCities(unique);
+        }
+      });
+  }, [filters.governorate]);
+
+  const hasActiveFilters = filters.cardType || filters.typeKey || filters.governorate || filters.city;
+  const activeCount = [filters.cardType, filters.typeKey, filters.governorate, filters.city].filter(Boolean).length;
 
   const clearFilters = () => {
-    onChange({ ...filters, cardType: '', typeKey: '', governorate: '', ...(({ city: _, ...rest }) => rest)(filters as any) });
+    onChange({ ...filters, cardType: '', typeKey: '', governorate: '', city: '' });
   };
-
-  const activeCount = [filters.cardType, filters.typeKey, filters.governorate, (filters as any).city].filter(Boolean).length;
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="space-y-2">
@@ -139,19 +134,19 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
 
           <select
             value={filters.governorate || ''}
-            onChange={(e) => onChange({ ...filters, governorate: e.target.value, ...{ city: '' } } as any)}
+            onChange={(e) => onChange({ ...filters, governorate: e.target.value, city: '' })}
             className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t.allGovernorates}</option>
-            {GOVERNORATES_EN.map((gov) => (
+            {governorates.map((gov) => (
               <option key={gov} value={gov}>{gov}</option>
             ))}
           </select>
 
           {cities.length > 0 && (
             <select
-              value={(filters as any).city || ''}
-              onChange={(e) => onChange({ ...filters, ...{ city: e.target.value } } as any)}
+              value={filters.city || ''}
+              onChange={(e) => onChange({ ...filters, city: e.target.value })}
               className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{isAr ? 'كل المدن' : 'All Cities'}</option>
