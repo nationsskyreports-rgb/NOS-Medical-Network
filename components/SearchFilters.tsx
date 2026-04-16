@@ -29,15 +29,49 @@ const GOVERNORATES_EN = [
   'Sharkeya', 'Sohag', 'South Sinai', 'Suez',
 ];
 
+const CITIES_BY_GOV: Record<string, string[]> = {
+  'Al Wadi Al Gadid': ['Al Wadi Al Gadid'],
+  'Alexandria': ['Agamy', 'Al Asafra', 'Al Mandara', 'Azareta', 'Bab Sharq', 'Bolkeley', 'Burj Al Arab', 'Cleopatra', 'El Hadra', 'Fleming', 'Gleem', 'Hanoville', 'Ibrahimia', 'Kafr Abdo', 'Loran', 'Miami', 'Moharam Bek', 'Montazah', 'Mustafa Kamel', 'Raml Station', 'Roshdy', 'Saba Pasha', 'San Stefano', 'Semouha', 'Sidi Beshr', 'Sidi Gaber', 'Sporting', 'Victoria', 'Zizinia'],
+  'Assuit': ['Assuit'],
+  'Aswan': ['Aswan', 'Edfo', 'Kom', 'Komombo'],
+  'Bani Sweif': ['Bani Sweif'],
+  'Beheira': ['Damanhur', 'Edco', 'Housh Issa', 'Kafr El Dawar', 'Noubaria', 'Rashid'],
+  'Beni Suef': ['Beni Suef', 'Beba', 'El Wasta', 'Fashin'],
+  'Cairo': ['Abbasseya', 'Ain Shams', 'Badr City', 'Dokki', 'El Rehab', 'El Sherouk', 'Fifth Settlement', 'Garden City', 'Heliopolis', 'Helwan', 'Katamia', 'Maadi', 'Madinaty', 'Manial', 'Matariya', 'Mohandiseen', 'Mokatam', 'Nasr City', 'New Cairo', 'Ramses', 'Roxy', 'Sayeda Zeinab', 'Sheikh Zayed', 'Sheraton', 'Shobra', 'Shorouk', 'Zamalek', 'Zahraa El Maadi'],
+  'Dakhlia': ['Aga', 'Dekernes', 'Mansoura', 'Manzala', 'Mit Ghamr', 'Sherbeen', 'Sinblaween', 'Talkha'],
+  'Damietta': ['Damietta', 'Farscour', 'New Damietta', 'Ras El Bar'],
+  'Fayoum': ['Fayoum', 'Ibsheway'],
+  'Gharbia': ['Kafr El Zayat', 'Mahalla El-Kubra', 'Tanta', 'Zefta', 'Qotour', 'Santa'],
+  'Giza': ['6th October City', 'Agouza', 'Badrashin', 'Boulak Al Dakrour', 'Dokki', 'Embaba', 'Faisal', 'Giza', 'Hadaiek October', 'Haram', 'Kerdasa', 'Mohandiseen', 'Omrania', 'Sheikh Zayed'],
+  'Ismailia': ['Faied', 'Ismailia', 'Quantarah'],
+  'Kafr Al Sheikh': ['Desouk', 'Kafr Al Sheikh', 'Sedy Salem'],
+  'Luxor': ['Esna', 'Luxor City'],
+  'Marsa Matrouh': ['Al Alamien', 'Marsa Matrouh'],
+  'Menoufia': ['Ashmoon', 'Menouf', 'Quesna', 'Sadat City', 'Shebin ElKoum', 'Talla'],
+  'Minya': ['Bani Mazar', 'Maghagha', 'Malawy', 'Minya', 'New Minya', 'Samalut'],
+  'North Sinai': ['Al Arish'],
+  'Port Said': ['Port Fouad', 'Port Said'],
+  'Qalubiya': ['Banha', 'El Kanater El Khairia', 'El Obour', 'Kafr Shokr', 'Khanka', 'Mostorod', 'Qaha', 'Shibin El Qanatir', 'Shoubra El Kheima', 'Toukh'],
+  'Qena': ['Dishna', 'Keft', 'Nag Hammadi', 'Qena', 'Qous'],
+  'Red Sea': ['Gouna', 'Hurghada', 'Marsa Alam', 'Ras Ghareb', 'Safaga'],
+  'Sharkeya': ['10th of Ramadan', 'Abu Hammad', 'Belbeis', 'Faqous', 'Minya Al Qamh', 'Zagazig'],
+  'Sohag': ['Gerga', 'Sohag', 'Tahta', 'Tama'],
+  'South Sinai': ['Sharm El Shaikh'],
+  'Suez': ['Suez', 'Shokhna'],
+};
+
 export default function SearchFilters({ filters, onChange, locale, showFilters, onToggleFilters }: SearchFiltersProps) {
   const t = translations[locale];
   const isAr = locale === 'ar';
 
-  const hasActiveFilters = filters.cardType || filters.typeKey || filters.governorate;
+  const cities = filters.governorate ? (CITIES_BY_GOV[filters.governorate] || []) : [];
+  const hasActiveFilters = filters.cardType || filters.typeKey || filters.governorate || (filters as any).city;
 
   const clearFilters = () => {
-    onChange({ ...filters, cardType: '', typeKey: '', governorate: '' });
+    onChange({ ...filters, cardType: '', typeKey: '', governorate: '', ...(({ city: _, ...rest }) => rest)(filters as any) });
   };
+
+  const activeCount = [filters.cardType, filters.typeKey, filters.governorate, (filters as any).city].filter(Boolean).length;
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="space-y-2">
@@ -64,7 +98,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
           <span className="hidden sm:inline">{t.filters}</span>
           {hasActiveFilters && (
             <span className="bg-white text-blue-600 rounded-full w-4 h-4 text-xs flex items-center justify-center font-bold">
-              {[filters.cardType, filters.typeKey, filters.governorate].filter(Boolean).length}
+              {activeCount}
             </span>
           )}
         </button>
@@ -80,7 +114,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <select
             value={filters.cardType || ''}
             onChange={(e) => onChange({ ...filters, cardType: e.target.value as CardType | '' })}
@@ -105,7 +139,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
 
           <select
             value={filters.governorate || ''}
-            onChange={(e) => onChange({ ...filters, governorate: e.target.value })}
+            onChange={(e) => onChange({ ...filters, governorate: e.target.value, ...{ city: '' } } as any)}
             className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t.allGovernorates}</option>
@@ -113,6 +147,19 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
               <option key={gov} value={gov}>{gov}</option>
             ))}
           </select>
+
+          {cities.length > 0 && (
+            <select
+              value={(filters as any).city || ''}
+              onChange={(e) => onChange({ ...filters, ...{ city: e.target.value } } as any)}
+              className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">{isAr ? 'كل المدن' : 'All Cities'}</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          )}
         </div>
       )}
     </div>
