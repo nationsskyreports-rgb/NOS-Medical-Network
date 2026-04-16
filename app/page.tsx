@@ -24,9 +24,8 @@ const MapView = dynamic(() => import('@/components/MapView'), {
 type ViewMode = 'split' | 'map' | 'list';
 
 function hasActiveFilter(filters: ProviderFilters): boolean {
-  return !!(filters.cardType || filters.typeKey || filters.governorate || filters.search);
+  return !!(filters.cardType || filters.typeKey || filters.governorate || filters.city || filters.search);
 }
-
 export default function HomePage() {
   const { locale, setLocale, isRTL } = useLocale();
   const t = translations[locale];
