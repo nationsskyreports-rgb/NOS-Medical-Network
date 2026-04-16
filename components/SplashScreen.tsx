@@ -58,14 +58,13 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           borderBottomColor: '#d4a84355',
           animation: 'spin 2s linear infinite reverse',
         }} />
-        <
-       <img
-         src="/logo.png"
-         alt="Logo"
-         width={56}
-         height={56}
-         style={{ objectFit: 'contain' }}
-       />
+        <Image
+          src="/logo.png"
+          alt="Logo"
+          width={56}
+          height={56}
+          style={{ objectFit: 'contain' }}
+        />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
