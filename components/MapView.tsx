@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Provider, NearbyProvider } from '@/lib/database.types';
 import { CARD_TYPE_COLORS, PROVIDER_TYPE_ICONS } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -29,6 +29,7 @@ export default function MapView({
   const markersRef = useRef<Map<string, import('leaflet').Marker>>(new Map());
   const userMarkerRef = useRef<import('leaflet').Marker | null>(null);
   const isAr = locale === 'ar';
+  const [locating, setLocating] = useState(false);
 
   // Init map
   useEffect(() => {
@@ -53,11 +54,7 @@ export default function MapView({
         maxZoom: 19,
       }).addTo(map);
 
-      // Fix mobile size issue
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 300);
-
+      setTimeout(() => { map.invalidateSize(); }, 300);
       mapRef.current = map;
     });
 
@@ -73,10 +70,7 @@ export default function MapView({
   useEffect(() => {
     if (!mapRef.current) return;
     mapRef.current.setView(center, zoom, { animate: true });
-    // Fix size after view change
-    setTimeout(() => {
-      mapRef.current?.invalidateSize();
-    }, 300);
+    setTimeout(() => { mapRef.current?.invalidateSize(); }, 300);
   }, [center, zoom]);
 
   // Update markers
@@ -102,15 +96,7 @@ export default function MapView({
 
         const markerIcon = L.divIcon({
           html: `
-            <div style="
-              background:${color};
-              border:2px solid white;
-              border-radius:50% 50% 50% 0;
-              transform:rotate(-45deg);
-              width:32px;height:32px;
-              box-shadow:0 2px 8px rgba(0,0,0,0.3);
-              display:flex;align-items:center;justify-content:center;
-            ">
+            <div style="background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);width:32px;height:32px;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
               <span style="transform:rotate(45deg);font-size:14px;line-height:1">${icon}</span>
             </div>
           `,
@@ -135,10 +121,7 @@ export default function MapView({
             </div>
           `);
 
-        marker.on('click', () => {
-          onProviderSelect(provider);
-        });
-
+        marker.on('click', () => { onProviderSelect(provider); });
         markersRef.current.set(provider.id, marker);
       });
     });
@@ -152,34 +135,92 @@ export default function MapView({
     marker?.openPopup();
   }, [selectedProvider]);
 
-  // User location
+  // User location marker
   useEffect(() => {
     if (!mapRef.current || !userLocation) return;
     import('leaflet').then((L) => {
-      if (userMarkerRef.current) {
-        userMarkerRef.current.remove();
-      }
+      if (userMarkerRef.current) userMarkerRef.current.remove();
       const userIcon = L.divIcon({
-        html: `<div style="
-          width:16px;height:16px;background:#3b82f6;border:3px solid white;
-          border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.3);
-        "></div>`,
+        html: `<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.3);"></div>`,
         className: '',
         iconSize: [16, 16],
         iconAnchor: [8, 8],
       });
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
         .addTo(mapRef.current!)
-        .bindPopup('You are here');
+        .bindPopup(isAr ? 'أنت هنا' : 'You are here');
       mapRef.current!.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
     });
-  }, [userLocation]);
+  }, [userLocation, isAr]);
+
+  const handleLocateMe = () => {
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (!mapRef.current) return;
+        import('leaflet').then((L) => {
+          if (userMarkerRef.current) userMarkerRef.current.remove();
+          const userIcon = L.divIcon({
+            html: `<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.3);"></div>`,
+            className: '',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+          userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon })
+            .addTo(mapRef.current!)
+            .bindPopup(isAr ? 'أنت هنا' : 'You are here')
+            .openPopup();
+          mapRef.current!.setView([latitude, longitude], 14, { animate: true });
+        });
+        setLocating(false);
+      },
+      () => { setLocating(false); }
+    );
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full rounded-lg overflow-hidden"
-      style={{ minHeight: '300px', height: '100%' }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div
+        ref={containerRef}
+        className="w-full h-full rounded-lg overflow-hidden"
+        style={{ minHeight: '300px', height: '100%' }}
+      />
+      <button
+        onClick={handleLocateMe}
+        disabled={locating}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 12,
+          zIndex: 1000,
+          background: 'white',
+          border: '2px solid #e5e7eb',
+          borderRadius: 8,
+          width: 40,
+          height: 40,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
+        title={isAr ? 'موقعي' : 'My Location'}
+      >
+        {locating ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" strokeDasharray="30" strokeDashoffset="10">
+              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+            <circle cx="12" cy="12" r="8" strokeDasharray="4 2"/>
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }
