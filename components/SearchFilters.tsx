@@ -29,7 +29,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
   const [cities, setCities] = useState<string[]>([]);
 
   // جيب المحافظات من Supabase
-useEffect(() => {
+  useEffect(() => {
     supabase
       .from('providers')
       .select('governorate_en')
@@ -44,7 +44,7 @@ useEffect(() => {
   }, []);
   
   // جيب المدن لما تتغير المحافظة
-useEffect(() => {
+  useEffect(() => {
     if (!filters.governorate) {
       setCities([]);
       return;
@@ -111,28 +111,7 @@ useEffect(() => {
 
       {showFilters && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <select
-            value={filters.cardType || ''}
-            onChange={(e) => onChange({ ...filters, cardType: e.target.value as CardType | '' })}
-            className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">{t.allCards}</option>
-            {CARD_TYPES.map((ct) => (
-              <option key={ct} value={ct}>{t.card[ct]}</option>
-            ))}
-          </select>
-
-          <select
-            value={filters.typeKey || ''}
-            onChange={(e) => onChange({ ...filters, typeKey: e.target.value as ProviderTypeKey | '' })}
-            className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">{t.allTypes}</option>
-            {PROVIDER_TYPES.map((pt) => (
-              <option key={pt} value={pt}>{t.providerType[pt]}</option>
-            ))}
-          </select>
-
+          {/* 1. المحافظة */}
           <select
             value={filters.governorate || ''}
             onChange={(e) => onChange({ ...filters, governorate: e.target.value, city: '' })}
@@ -144,18 +123,42 @@ useEffect(() => {
             ))}
           </select>
 
-          {cities.length > 0 && (
-            <select
-              value={filters.city || ''}
-              onChange={(e) => onChange({ ...filters, city: e.target.value })}
-              className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{isAr ? 'كل المدن' : 'All Cities'}</option>
-              {cities.map((city) => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-          )}
+          {/* 2. المدينة */}
+          <select
+            value={filters.city || ''}
+            onChange={(e) => onChange({ ...filters, city: e.target.value })}
+            disabled={!filters.governorate}
+            className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">{isAr ? 'كل المدن' : 'All Cities'}</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+
+          {/* 3. نوع البروفايدر */}
+          <select
+            value={filters.typeKey || ''}
+            onChange={(e) => onChange({ ...filters, typeKey: e.target.value as ProviderTypeKey | '' })}
+            className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">{t.allTypes}</option>
+            {PROVIDER_TYPES.map((pt) => (
+              <option key={pt} value={pt}>{t.providerType[pt]}</option>
+            ))}
+          </select>
+
+          {/* 4. نوع الكارت */}
+          <select
+            value={filters.cardType || ''}
+            onChange={(e) => onChange({ ...filters, cardType: e.target.value as CardType | '' })}
+            className="h-9 px-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">{t.allCards}</option>
+            {CARD_TYPES.map((ct) => (
+              <option key={ct} value={ct}>{t.card[ct]}</option>
+            ))}
+          </select>
         </div>
       )}
     </div>
