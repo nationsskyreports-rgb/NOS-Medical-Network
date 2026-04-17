@@ -29,11 +29,12 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
   const [cities, setCities] = useState<string[]>([]);
 
   // جيب المحافظات من Supabase
-  useEffect(() => {
+useEffect(() => {
     supabase
       .from('providers')
       .select('governorate_en')
       .eq('is_active', true)
+      .limit(10000)
       .then(({ data }) => {
         if (data) {
           const unique = Array.from(new Set(data.map(d => d.governorate_en).filter(Boolean))).sort();
@@ -41,9 +42,9 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
         }
       });
   }, []);
-
+  
   // جيب المدن لما تتغير المحافظة
-  useEffect(() => {
+useEffect(() => {
     if (!filters.governorate) {
       setCities([]);
       return;
@@ -53,6 +54,7 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
       .select('city_en')
       .eq('is_active', true)
       .eq('governorate_en', filters.governorate)
+      .limit(10000)
       .then(({ data }) => {
         if (data) {
           const unique = Array.from(new Set(data.map(d => d.city_en).filter(Boolean))).sort();
@@ -60,7 +62,6 @@ export default function SearchFilters({ filters, onChange, locale, showFilters, 
         }
       });
   }, [filters.governorate]);
-
   const hasActiveFilters = filters.cardType || filters.typeKey || filters.governorate || filters.city;
   const activeCount = [filters.cardType, filters.typeKey, filters.governorate, filters.city].filter(Boolean).length;
 
