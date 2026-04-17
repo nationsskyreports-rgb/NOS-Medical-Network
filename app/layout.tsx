@@ -29,8 +29,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="theme-color" content="#1e40af" />
+        {/* تغيير لون شريط المتصفح للأسود */}
+        <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        {/* إضافة ستايل سريع لجعل الخلفية سوداء تماماً */}
+        <style>{`
+          body {
+            background-color: #000000 !important;
+          }
+        `}</style>
       </head>
       <body className={`${inter.variable} ${cairo.variable} font-sans antialiased`}>
         <ServiceWorkerRegister />
