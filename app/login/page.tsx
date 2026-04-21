@@ -35,6 +35,8 @@ export default function LoginPage() {
       return;
     }
 
+    // ✅ router.refresh() ضروري عشان الـ middleware يشوف الـ session الجديدة
+    router.refresh();
     router.push('/');
     setLoading(false);
   };
