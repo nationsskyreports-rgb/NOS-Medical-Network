@@ -40,7 +40,7 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ✅ استخدام getUser() بدل getSession() - أموثوق مع @supabase/ssr
+  // ✅ بيشيك على الـ admin من الـ user metadata مباشرة - أبسط وأضمن
   const checkAdmin = useCallback(async () => {
     setAuthLoading(true);
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -54,13 +54,9 @@ export default function AdminPage() {
 
     setUser(currentUser as { id: string });
 
-    const { data } = await supabase
-      .from('admin_users')
-      .select('id')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-
-    setIsAdmin(!!data);
+    // بيقرأ is_admin من الـ user_metadata اللي حطيناه في Supabase
+    const isAdminUser = currentUser.user_metadata?.is_admin === true;
+    setIsAdmin(isAdminUser);
     setAuthLoading(false);
   }, []);
 
