@@ -16,14 +16,29 @@ export default function ResetPasswordPage() {
   const [done, setDone] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
 
-  // Supabase puts the token in the URL hash — we need to wait for it
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setSessionReady(true);
-      }
-    });
-    return () => subscription.unsubscribe();
+    // Read token from URL hash manually
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      }).then(({ error }) => {
+        if (!error) setSessionReady(true);
+      });
+    } else {
+      // fallback: listen for PASSWORD_RECOVERY event
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setSessionReady(true);
+        }
+      });
+      return () => subscription.unsubscribe();
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,15 +67,12 @@ export default function ResetPasswordPage() {
 
     setDone(true);
     setLoading(false);
-
-    // Redirect to login after 2 seconds
     setTimeout(() => router.push('/login'), 2000);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-blue-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +85,6 @@ export default function ResetPasswordPage() {
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           {done ? (
-            /* Success */
             <div className="flex flex-col items-center text-center py-4">
               <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle size={28} className="text-green-600" />
@@ -89,7 +100,6 @@ export default function ResetPasswordPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* New Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
                   <div className="relative">
@@ -109,7 +119,6 @@ export default function ResetPasswordPage() {
                   </div>
                 </div>
 
-                {/* Confirm Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
                   <div className="relative">
@@ -129,7 +138,6 @@ export default function ResetPasswordPage() {
                   </div>
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-100 flex items-start gap-2">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg">
