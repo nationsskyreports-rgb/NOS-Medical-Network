@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LocateFixed, Map as MapIcon, List, Languages, Settings, Loader as Loader2, CircleAlert as AlertCircle, ShieldCheck } from 'lucide-react';
+import { LocateFixed, Map as MapIcon, List, Languages, Settings, Loader as Loader2, CircleAlert as AlertCircle, ShieldCheck, LogOut } from 'lucide-react';
 import SplashScreen from '@/components/SplashScreen';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,6 +58,13 @@ export default function HomePage() {
       }
     });
   }, [router]);
+
+  // ✅ Logout handler
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+    router.push('/login');
+  };
 
   const fetchProviders = useCallback(async (currentFilters: ProviderFilters) => {
     if (!hasActiveFilter(currentFilters)) {
@@ -220,6 +227,16 @@ export default function HomePage() {
             >
               <Languages size={14} />
               {locale === 'en' ? 'عربي' : 'English'}
+            </button>
+
+            {/* ✅ Logout Button */}
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="h-8 px-3 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors flex items-center gap-1.5"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
