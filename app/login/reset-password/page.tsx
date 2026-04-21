@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader as Loader2, CheckCircle, Lock } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Eye, EyeOff, Loader as Loader2, CheckCircle, Lock, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,31 +17,58 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [invalidLink, setInvalidLink] = useState(false);
 
   useEffect(() => {
-    // Read token from URL hash manually
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
+    const code = searchParams.get('code');
 
-    if (accessToken && refreshToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      }).then(({ error }) => {
-        if (!error) setSessionReady(true);
-      });
-    } else {
-      // fallback: listen for PASSWORD_RECOVERY event
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === 'PASSWORD_RECOVERY') {
+    if (code) {
+      // ✅ الطريقة الجديدة مع @supabase/ssr — بيستخدم code في الـ URL
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          setInvalidLink(true);
+        } else {
           setSessionReady(true);
         }
       });
-      return () => subscription.unsubscribe();
+    } else {
+      // fallback للـ hash القديم (لو جه من link قديم)
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).then(({ error }) => {
+          if (error) {
+            setInvalidLink(true);
+          } else {
+            setSessionReady(true);
+          }
+        });
+      } else {
+        // fallback تاني: استنى event PASSWORD_RECOVERY
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            setSessionReady(true);
+          }
+        });
+
+        // لو فضل 5 ثواني ومفيش session، يبان اللينك غلط
+        const timeout = setTimeout(() => {
+          setInvalidLink(true);
+        }, 5000);
+
+        return () => {
+          subscription.unsubscribe();
+          clearTimeout(timeout);
+        };
+      }
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +120,20 @@ export default function ResetPasswordPage() {
               </div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">Password Updated!</h2>
               <p className="text-sm text-gray-500">Redirecting you to login...</p>
+            </div>
+          ) : invalidLink ? (
+            <div className="flex flex-col items-center text-center py-4">
+              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <XCircle size={28} className="text-red-500" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Invalid or Expired Link</h2>
+              <p className="text-sm text-gray-500 mb-6">This reset link has expired or already been used.</p>
+              <button
+                onClick={() => router.push('/login/forgot-password')}
+                className="px-5 py-2.5 bg-blue-700 text-white text-sm font-semibold rounded-xl hover:bg-blue-800 transition-colors"
+              >
+                Request New Link
+              </button>
             </div>
           ) : (
             <>
@@ -157,8 +200,11 @@ export default function ResetPasswordPage() {
                   {loading ? 'Updating...' : 'Update Password'}
                 </button>
 
-                {!sessionReady && (
-                  <p className="text-center text-xs text-gray-400">Verifying your reset link...</p>
+                {!sessionReady && !invalidLink && (
+                  <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" />
+                    Verifying your reset link...
+                  </p>
                 )}
               </form>
             </>
