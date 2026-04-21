@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { LocateFixed, Map as MapIcon, List, Languages, Settings, Loader as Loader2, CircleAlert as AlertCircle, ShieldCheck } from 'lucide-react';
 import SplashScreen from '@/components/SplashScreen';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Provider, NearbyProvider, ProviderFilters } from '@/lib/database.types';
 import { useLocale } from '@/hooks/useLocale';
@@ -26,10 +27,13 @@ type ViewMode = 'split' | 'map' | 'list';
 function hasActiveFilter(filters: ProviderFilters): boolean {
   return !!(filters.cardType || filters.typeKey || filters.governorate || filters.city || filters.search);
 }
+
 export default function HomePage() {
+  const router = useRouter();
   const { locale, setLocale, isRTL } = useLocale();
   const t = translations[locale];
 
+  const [authChecked, setAuthChecked] = useState(false);
   const [providers, setProviders] = useState<(Provider | NearbyProvider)[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +48,18 @@ export default function HomePage() {
   const [mapZoom, setMapZoom] = useState(7);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Check session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setAuthChecked(true);
+      }
+    });
+  }, [router]);
+
   const fetchProviders = useCallback(async (currentFilters: ProviderFilters) => {
-    // لو مفيش فلتر، مجيبش حاجة
     if (!hasActiveFilter(currentFilters)) {
       setProviders([]);
       return;
@@ -70,8 +84,8 @@ export default function HomePage() {
         query = query.eq('governorate_en', currentFilters.governorate);
       }
       if (currentFilters.city) {
-  query = query.eq('city_en', currentFilters.city);
-}
+        query = query.eq('city_en', currentFilters.city);
+      }
       if (currentFilters.search) {
         query = query.or(
           `name_en.ilike.%${currentFilters.search}%,name_ar.ilike.%${currentFilters.search}%,city_en.ilike.%${currentFilters.search}%,speciality_en.ilike.%${currentFilters.search}%`
@@ -119,6 +133,7 @@ export default function HomePage() {
   }, [t.error]);
 
   useEffect(() => {
+    if (!authChecked) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       if (nearbyMode && userLocation) {
@@ -130,7 +145,7 @@ export default function HomePage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [filters, nearbyMode, userLocation, fetchProviders, fetchNearbyProviders]);
+  }, [filters, nearbyMode, userLocation, fetchProviders, fetchNearbyProviders, authChecked]);
 
   const handleNearby = () => {
     if (nearbyMode) {
@@ -168,6 +183,15 @@ export default function HomePage() {
 
   const noFilterActive = !hasActiveFilter(filters) && !nearbyMode;
   const [showSplash, setShowSplash] = useState(true);
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-blue-500" size={32} />
+      </div>
+    );
+  }
 
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
