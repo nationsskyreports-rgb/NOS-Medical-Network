@@ -16,25 +16,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const validateDomain = (email: string) => {
-    return email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!validateDomain(email)) {
+    if (!email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
       setError(`Access is restricted to @${ALLOWED_DOMAIN} accounts only.`);
       return;
     }
 
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
       setError('Invalid email or password. Please try again.');
@@ -49,7 +42,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo / Brand */}
+
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-blue-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -61,24 +55,19 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Work Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Work Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError('');
-                  }}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder={`you@${ALLOWED_DOMAIN}`}
                   className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                 />
@@ -91,13 +80,8 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <Link
-                  href="/login/forgot-password"
-                  className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium"
-                >
+                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <Link href="/login/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium">
                   Forgot password?
                 </Link>
               </div>
@@ -111,11 +95,8 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="w-full h-11 pl-10 pr-11 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -132,7 +113,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -142,11 +122,20 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Sign up link */}
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500">
+              Don't have an account?{' '}
+              <Link href="/login/signup" className="text-blue-600 hover:underline font-medium">
+                Create Account
+              </Link>
+            </p>
+          </div>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
-          &copy; {new Date().getFullYear()} Nations of Sky &mdash; Internal Use Only
+          &copy; {new Date().getFullYear()} Nations of Sky — Internal Use Only
         </p>
       </div>
     </div>
