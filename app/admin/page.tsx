@@ -18,7 +18,7 @@ const CARD_BADGE: Record<string, string> = {
 const PAGE_SIZE = 20;
 
 export default function AdminPage() {
-  const [session, setSession] = useState<unknown>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -40,40 +40,39 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      if (s) checkAdmin(s);
-      else setAuthLoading(false);
-    });
+  // ✅ استخدام getUser() بدل getSession() - أموثوق مع @supabase/ssr
+  const checkAdmin = useCallback(async () => {
+    setAuthLoading(true);
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => {
-      setSession(s);
-      if (s) checkAdmin(s);
-      else {
-        setIsAdmin(false);
-        setAuthLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAdmin = async (s: unknown) => {
-    const sessionObj = s as { user?: { id?: string } } | null;
-    if (!sessionObj?.user?.id) {
+    if (!currentUser?.id) {
+      setUser(null);
       setIsAdmin(false);
       setAuthLoading(false);
       return;
     }
+
+    setUser(currentUser as { id: string });
+
     const { data } = await supabase
       .from('admin_users')
       .select('id')
-      .eq('user_id', sessionObj.user.id)
+      .eq('user_id', currentUser.id)
       .maybeSingle();
+
     setIsAdmin(!!data);
     setAuthLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    checkAdmin();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkAdmin();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkAdmin]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -154,8 +153,9 @@ export default function AdminPage() {
     }
   };
 
-  const handleSignOut = () => {
-    supabase.auth.signOut();
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
   };
 
   if (authLoading) {
@@ -166,8 +166,8 @@ export default function AdminPage() {
     );
   }
 
-  if (!session) {
-    return <AdminLogin onLogin={() => {}} />;
+  if (!user) {
+    return <AdminLogin onLogin={() => checkAdmin()} />;
   }
 
   if (!isAdmin) {
