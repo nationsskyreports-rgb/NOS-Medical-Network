@@ -1,30 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect only the home page
   if (pathname === '/') {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const token = request.cookies.get('sb-access-token')?.value ||
+                  request.cookies.get(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`)?.value;
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          cookie: request.headers.get('cookie') ?? '',
-        },
-      },
-    });
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      const loginUrl = new URL('/login', request.url);
-      return NextResponse.redirect(loginUrl);
+    if (!token) {
+      // Check for any supabase auth cookie
+      const hasCookie = [...request.cookies.getAll()].some(c => c.name.includes('auth-token'));
+      if (!hasCookie) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
     }
   }
 
