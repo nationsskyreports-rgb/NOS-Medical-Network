@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Loader as Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader as Loader2, Mail, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const ALLOWED_DOMAIN = 'nationsofsky.com';
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,7 +17,6 @@ export default function SignUpPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +42,6 @@ export default function SignUpPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/login`,
-      },
     });
 
     if (signUpError) {
@@ -52,8 +50,7 @@ export default function SignUpPage() {
       return;
     }
 
-    setDone(true);
-    setLoading(false);
+    router.push('/login');
   };
 
   return (
@@ -73,27 +70,7 @@ export default function SignUpPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          {done ? (
-            /* Success */
-            <div className="flex flex-col items-center text-center py-4">
-              <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle size={28} className="text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Check your email!</h2>
-              <p className="text-sm text-gray-500 mb-1">We sent a confirmation link to:</p>
-              <p className="text-sm font-semibold text-blue-700 mb-4">{email}</p>
-              <p className="text-xs text-gray-400">
-                Click the link in the email to activate your account, then come back to sign in.
-              </p>
-              <Link
-                href="/login"
-                className="mt-6 text-sm text-blue-600 hover:underline font-medium"
-              >
-                Go to Sign In
-              </Link>
-            </div>
-          ) : (
-            <>
+          <>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
                 <p className="text-sm text-gray-500 mt-1">Use your Nations of Sky work email.</p>
@@ -190,7 +167,6 @@ export default function SignUpPage() {
                 </p>
               </div>
             </>
-          )}
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
