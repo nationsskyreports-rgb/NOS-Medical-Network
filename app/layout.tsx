@@ -8,6 +8,8 @@ const cairo = Cairo({
   subsets: ['arabic'],
   variable: '--font-cairo',
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  preload: false,   // ← الإضافة الوحيدة
 });
 
 export const metadata: Metadata = {
@@ -29,10 +31,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* تغيير لون شريط المتصفح للأسود */}
         <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        {/* إضافة ستايل سريع لجعل الخلفية سوداء تماماً */}
         <style>{`
           body {
             background-color: #000000 !important;
