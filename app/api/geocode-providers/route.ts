@@ -73,14 +73,14 @@ function getGovernorateCoords(govEn: string, govAr: string): { lat: number; lng:
 }
 
 async function geocodeAPI(query: string): Promise<{ lat: number; lng: number } | null> {
-  const key = process.env.HERE_API_KEY;
-  const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(query)}&in=countryCode:EGY&apiKey=${key}`;
+  const key = process.env.OPENCAGE_API_KEY;
+  const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${key}&countrycode=eg&limit=1&no_annotations=1`;
   try {
     const res  = await fetch(url);
     const data = await res.json();
-    if (data?.items?.length > 0) {
-      const pos = data.items[0].position;
-      return { lat: pos.lat, lng: pos.lng };
+    if (data?.results?.length > 0) {
+      const { lat, lng } = data.results[0].geometry;
+      return { lat, lng };
     }
   } catch { /* ignore */ }
   return null;
