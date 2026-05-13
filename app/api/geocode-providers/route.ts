@@ -9,151 +9,118 @@ const supabase = createClient(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// حدود مصر الجغرافية للتأكد من صحة النتيجة
-const EGYPT_BOUNDS = {
-  minLat: 22.0,
-  maxLat: 31.7,
-  minLng: 24.7,
-  maxLng: 37.0,
-};
+// إحداثيات المحافظات — إنجليزي وعربي
+const GOVERNORATE_COORDS: { keys: string[]; lat: number; lng: number }[] = [
+  { keys: ['cairo', 'القاهرة'],               lat: 30.0444, lng: 31.2357 },
+  { keys: ['giza', 'الجيزة', 'الجيزه'],       lat: 30.0131, lng: 31.2089 },
+  { keys: ['alexandria', 'الإسكندرية', 'اسكندرية', 'الاسكندرية'], lat: 31.2001, lng: 29.9187 },
+  { keys: ['aswan', 'أسوان', 'اسوان'],         lat: 24.0889, lng: 32.8998 },
+  { keys: ['assuit', 'assiut', 'أسيوط', 'اسيوط'], lat: 27.1810, lng: 31.1837 },
+  { keys: ['beheira', 'البحيرة'],              lat: 30.8480, lng: 30.3436 },
+  { keys: ['dakahlia', 'الدقهلية'],            lat: 31.0364, lng: 31.3807 },
+  { keys: ['ismailia', 'الإسماعيلية'],         lat: 30.5965, lng: 32.2715 },
+  { keys: ['luxor', 'الأقصر', 'الاقصر'],       lat: 25.6872, lng: 32.6396 },
+  { keys: ['red sea', 'البحر الأحمر'],         lat: 27.2579, lng: 33.8116 },
+  { keys: ['port said', 'بورسعيد'],            lat: 31.2565, lng: 32.2841 },
+  { keys: ['suez', 'السويس'],                  lat: 29.9668, lng: 32.5498 },
+  { keys: ['damietta', 'دمياط'],               lat: 31.4165, lng: 31.8133 },
+  { keys: ['sohag', 'سوهاج'],                  lat: 26.5591, lng: 31.6957 },
+  { keys: ['qena', 'قنا'],                     lat: 26.1551, lng: 32.7160 },
+  { keys: ['minya', 'المنيا'],                 lat: 28.0871, lng: 30.7618 },
+  { keys: ['fayoum', 'الفيوم'],                lat: 29.3084, lng: 30.8428 },
+  { keys: ['sharqia', 'الشرقية'],              lat: 30.7367, lng: 31.7199 },
+  { keys: ['gharbia', 'الغربية'],              lat: 30.8754, lng: 31.0313 },
+  { keys: ['menoufia', 'المنوفية'],            lat: 30.5973, lng: 30.9876 },
+  { keys: ['kafr', 'كفر الشيخ'],              lat: 31.1107, lng: 30.9388 },
+  { keys: ['matrouh', 'مطروح'],               lat: 31.3543, lng: 27.2373 },
+  { keys: ['sinai', 'سيناء'],                  lat: 30.2754, lng: 33.8116 },
+  { keys: ['beni', 'بني سويف'],               lat: 28.5473, lng: 31.5020 },
+  { keys: ['north sinai', 'شمال سيناء'],       lat: 30.9408, lng: 33.5974 },
+  { keys: ['south sinai', 'جنوب سيناء'],       lat: 28.2100, lng: 34.1500 },
+  { keys: ['heliopolis', 'مصر الجديدة'],       lat: 30.0878, lng: 31.3267 },
+  { keys: ['nasr city', 'مدينة نصر'],         lat: 30.0626, lng: 31.3417 },
+  { keys: ['new cairo', 'القاهرة الجديدة'],    lat: 30.0286, lng: 31.4842 },
+  { keys: ['6th', 'السادس من أكتوبر', 'اكتوبر'], lat: 29.9097, lng: 30.9501 },
+  { keys: ['sheikh zayed', 'الشيخ زايد'],      lat: 30.0439, lng: 30.9425 },
+];
 
-// إحداثيات المحافظات لتأكيد المسافة من النتيجة (validation فقط، مش fallback)
-const GOVERNORATE_CENTERS: Record<string, [number, number]> = {
-  alexandria: [31.2001, 29.9187],
-  aswan:      [24.0889, 32.8998],
-  assuit:     [27.1810, 31.1837],
-  asyut:      [27.1810, 31.1837],
-  beheira:    [30.8480, 30.3436],
-  dakahlia:   [31.0364, 31.3807],
-  giza:       [30.0131, 31.2089],
-  ismailia:   [30.5965, 32.2715],
-  luxor:      [25.6872, 32.6396],
-  'red sea':  [27.2579, 33.8116],
-  cairo:      [30.0444, 31.2357],
-  'port said':[31.2565, 32.2841],
-  suez:       [29.9668, 32.5498],
-  damietta:   [31.4165, 31.8133],
-  sohag:      [26.5591, 31.6957],
-  qena:       [26.1551, 32.7160],
-  minya:      [28.0871, 30.7618],
-  fayoum:     [29.3084, 30.8428],
-  sharqia:    [30.7367, 31.7199],
-  sharkeya:   [30.7367, 31.7199],
-  gharbia:    [30.8754, 31.0313],
-  menoufia:   [30.5973, 30.9876],
-  'kafr el sheikh': [31.1107, 30.9388],
-  matrouh:    [31.3543, 27.2373],
-  sinai:      [30.2754, 33.8116],
-  'beni suef':[28.5473, 31.5020],
-};
-
-function isInEgypt(lat: number, lng: number): boolean {
-  return (
-    lat >= EGYPT_BOUNDS.minLat && lat <= EGYPT_BOUNDS.maxLat &&
-    lng >= EGYPT_BOUNDS.minLng && lng <= EGYPT_BOUNDS.maxLng
-  );
+function normalizeAr(text: string): string {
+  return text
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/[ً-ٟ]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
-// حساب المسافة بالكيلومتر بين نقطتين (Haversine)
-function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+function getGovernorateCoords(govEn: string, govAr: string): { lat: number; lng: number } | null {
+  const searchEn = (govEn || '').toLowerCase().trim();
+  const searchAr = normalizeAr(govAr || '');
+  if (!searchEn && !searchAr) return null;
 
-// تأكيد أن النتيجة قريبة من المحافظة المتوقعة (max 150km)
-function isPlausible(
-  lat: number, lng: number,
-  governorate_en: string
-): boolean {
-  if (!isInEgypt(lat, lng)) return false;
-
-  const govLower = governorate_en.toLowerCase();
-  const key = Object.keys(GOVERNORATE_CENTERS).find(k =>
-    govLower.includes(k) || k.includes(govLower)
-  );
-  if (!key) return true; // لو مش عارف المحافظة، قبّل النتيجة لو في مصر
-
-  const [cLat, cLng] = GOVERNORATE_CENTERS[key];
-  const dist = distanceKm(lat, lng, cLat, cLng);
-  return dist <= 150; // 150km max من مركز المحافظة
+  for (const g of GOVERNORATE_COORDS) {
+    for (const key of g.keys) {
+      const normalizedKey = normalizeAr(key);
+      if (searchEn && (searchEn.includes(key.toLowerCase()) || key.toLowerCase().includes(searchEn))) {
+        return { lat: g.lat, lng: g.lng };
+      }
+      if (searchAr && (searchAr.includes(normalizedKey) || normalizedKey.includes(searchAr))) {
+        return { lat: g.lat, lng: g.lng };
+      }
+    }
+  }
+  return null;
 }
 
 async function nominatim(query: string): Promise<{ lat: number; lng: number } | null> {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=eg`;
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'MedicalNetworkFinder/1.0',
-        'Accept-Language': 'ar,en',
-      },
-    });
-    if (!res.ok) return null;
+    const res  = await fetch(url, { headers: { 'User-Agent': 'MedicalNetworkFinder/1.0', 'Accept-Language': 'ar,en' } });
     const data = await res.json();
-    if (data?.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
+    if (data?.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
   } catch { /* ignore */ }
   return null;
 }
 
 async function geocode(p: {
   address_en: string; address_ar: string;
-  city_en: string; city_ar: string;
+  city_en: string;    city_ar: string;
   governorate_en: string; governorate_ar: string;
 }): Promise<{ lat: number; lng: number; method: string } | null> {
 
-  const address    = p.address_en    || p.address_ar    || '';
-  const city       = p.city_en       || p.city_ar       || '';
+  const address     = p.address_en     || p.address_ar     || '';
+  const city        = p.city_en        || p.city_ar        || '';
   const governorate = p.governorate_en || p.governorate_ar || '';
-  const govEn      = p.governorate_en || '';
 
   // محاولة 1: عنوان كامل
-  if (address && city) {
+  if (address) {
     await sleep(1100);
     const r = await nominatim([address, city, governorate, 'Egypt'].filter(Boolean).join(', '));
-    if (r && isPlausible(r.lat, r.lng, govEn)) {
-      return { ...r, method: 'full address' };
-    }
+    if (r) return { ...r, method: 'full address' };
   }
 
-  // محاولة 2: اسم المحل + المدينة فقط (بدون العنوان التفصيلي)
-  if (address && city && address !== city) {
-    await sleep(1100);
-    // جرب بدون العنوان التفصيلي - أحياناً الاسم + المدينة أدق
-    const shortQuery = [city, governorate, 'Egypt'].filter(Boolean).join(', ');
-    const r = await nominatim(shortQuery);
-    if (r && isPlausible(r.lat, r.lng, govEn)) {
-      return { ...r, method: 'city only' };
-    }
-  } else if (!address && (city || governorate)) {
-    // لو معندوش عنوان خالص، جرب المدينة والمحافظة
+  // محاولة 2: مدينة + محافظة
+  if (city || governorate) {
     await sleep(1100);
     const r = await nominatim([city, governorate, 'Egypt'].filter(Boolean).join(', '));
-    if (r && isPlausible(r.lat, r.lng, govEn)) {
-      return { ...r, method: 'city/gov' };
-    }
+    if (r) return { ...r, method: 'city/gov' };
   }
 
-  // ❌ مفيش governorate fallback — الـ provider يفضل null أحسن من إحداثيات غلط
+  // محاولة 3: إحداثيات المحافظة (إنجليزي + عربي)
+  const coords = getGovernorateCoords(p.governorate_en, p.governorate_ar);
+  if (coords) return { ...coords, method: 'governorate fallback' };
+
   return null;
 }
 
-// GET - كام provider ناقص
 export async function GET() {
   const { count } = await supabase
     .from('providers')
     .select('*', { count: 'exact', head: true })
     .is('lat', null);
-
   return NextResponse.json({ remaining: count ?? 0 });
 }
 
-// POST - جيوكد batch
 export async function POST() {
   const { data: providers, error } = await supabase
     .from('providers')
@@ -162,9 +129,8 @@ export async function POST() {
     .limit(10);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!providers || providers.length === 0) {
+  if (!providers || providers.length === 0)
     return NextResponse.json({ processed: 0, remaining: 0, done: true, results: [] });
-  }
 
   let success = 0;
   let failed  = 0;
@@ -182,18 +148,12 @@ export async function POST() {
 
       if (!updateError) {
         success++;
-        results.push({
-          name,
-          ok: true,
-          coords: `${result.lat.toFixed(4)}, ${result.lng.toFixed(4)}`,
-          method: result.method,
-        });
+        results.push({ name, ok: true, coords: `${result.lat.toFixed(4)}, ${result.lng.toFixed(4)}`, method: result.method });
       } else {
         failed++;
         results.push({ name, ok: false });
       }
     } else {
-      // خلّي lat/lng null — متحطش إحداثيات وهمية
       failed++;
       results.push({ name, ok: false });
     }
