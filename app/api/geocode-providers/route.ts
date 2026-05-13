@@ -13,8 +13,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const GOVERNORATE_COORDS: { keys: string[]; lat: number; lng: number }[] = [
   { keys: ['cairo', 'القاهرة'],               lat: 30.0444, lng: 31.2357 },
   { keys: ['giza', 'الجيزة', 'الجيزه'],       lat: 30.0131, lng: 31.2089 },
-  { keys: ['qalubiya', 'qalyubia', 'القليوبية'], lat: 30.3292, lng: 31.2248 },
-  { keys: ['dakhlia', 'dakahlia', 'الدقهلية'],   lat: 31.0364, lng: 31.3807 },
   { keys: ['alexandria', 'الإسكندرية', 'اسكندرية', 'الاسكندرية'], lat: 31.2001, lng: 29.9187 },
   { keys: ['aswan', 'أسوان', 'اسوان'],         lat: 24.0889, lng: 32.8998 },
   { keys: ['assuit', 'assiut', 'أسيوط', 'اسيوط'], lat: 27.1810, lng: 31.1837 },
@@ -63,10 +61,10 @@ function getGovernorateCoords(govEn: string, govAr: string): { lat: number; lng:
   for (const g of GOVERNORATE_COORDS) {
     for (const key of g.keys) {
       const normalizedKey = normalizeAr(key);
-      if (searchEn && searchEn.length > 2 && (searchEn.includes(key.toLowerCase()) || key.toLowerCase().includes(searchEn))) {
+      if (searchEn && (searchEn.includes(key.toLowerCase()) || key.toLowerCase().includes(searchEn))) {
         return { lat: g.lat, lng: g.lng };
       }
-      if (searchAr && searchAr.length > 2 && (searchAr.includes(normalizedKey) || normalizedKey.includes(searchAr))) {
+      if (searchAr && (searchAr.includes(normalizedKey) || normalizedKey.includes(searchAr))) {
         return { lat: g.lat, lng: g.lng };
       }
     }
@@ -74,12 +72,16 @@ function getGovernorateCoords(govEn: string, govAr: string): { lat: number; lng:
   return null;
 }
 
-async function nominatim(query: string): Promise<{ lat: number; lng: number } | null> {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=eg`;
+async function geocodeAPI(query: string): Promise<{ lat: number; lng: number } | null> {
+  const key = process.env.HERE_API_KEY;
+  const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(query)}&in=countryCode:EGY&apiKey=${key}`;
   try {
-    const res  = await fetch(url, { headers: { 'User-Agent': 'MedicalNetworkFinder/1.0', 'Accept-Language': 'ar,en' } });
+    const res  = await fetch(url);
     const data = await res.json();
-    if (data?.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    if (data?.items?.length > 0) {
+      const pos = data.items[0].position;
+      return { lat: pos.lat, lng: pos.lng };
+    }
   } catch { /* ignore */ }
   return null;
 }
@@ -97,7 +99,7 @@ async function geocode(p: {
   if (address) {
     await sleep(1100);
     const governorate = p.governorate_en || p.governorate_ar || '';
-    const r = await nominatim([address, city, governorate, 'Egypt'].filter(Boolean).join(', '));
+    const r = await geocodeAPI([address, city, governorate, 'Egypt'].filter(Boolean).join(', '));
     if (r) return { ...r, method: 'full address' };
   }
 
@@ -105,7 +107,7 @@ async function geocode(p: {
   if (city && !address) {
     await sleep(1100);
     const governorate = p.governorate_en || p.governorate_ar || '';
-    const r = await nominatim([city, governorate, 'Egypt'].filter(Boolean).join(', '));
+    const r = await geocodeAPI([city, governorate, 'Egypt'].filter(Boolean).join(', '));
     if (r) return { ...r, method: 'city/gov' };
   }
 
@@ -129,7 +131,7 @@ export async function POST() {
     .from('providers')
     .select('id, name_en, name_ar, address_en, address_ar, city_en, city_ar, governorate_en, governorate_ar')
     .is('lat', null)
-    .limit(10);
+    .limit(20);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!providers || providers.length === 0)
