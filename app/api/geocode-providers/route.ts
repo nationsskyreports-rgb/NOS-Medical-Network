@@ -13,6 +13,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const GOVERNORATE_COORDS: { keys: string[]; lat: number; lng: number }[] = [
   { keys: ['cairo', 'القاهرة'],               lat: 30.0444, lng: 31.2357 },
   { keys: ['giza', 'الجيزة', 'الجيزه'],       lat: 30.0131, lng: 31.2089 },
+  { keys: ['qalubiya', 'qalyubia', 'القليوبية'], lat: 30.3292, lng: 31.2248 },
+  { keys: ['dakhlia', 'dakahlia', 'الدقهلية'],   lat: 31.0364, lng: 31.3807 },
   { keys: ['alexandria', 'الإسكندرية', 'اسكندرية', 'الاسكندرية'], lat: 31.2001, lng: 29.9187 },
   { keys: ['aswan', 'أسوان', 'اسوان'],         lat: 24.0889, lng: 32.8998 },
   { keys: ['assuit', 'assiut', 'أسيوط', 'اسيوط'], lat: 27.1810, lng: 31.1837 },
