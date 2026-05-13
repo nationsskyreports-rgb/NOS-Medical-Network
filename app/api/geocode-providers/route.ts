@@ -90,23 +90,24 @@ async function geocode(p: {
 
   const address     = p.address_en     || p.address_ar     || '';
   const city        = p.city_en        || p.city_ar        || '';
-  const governorate = p.governorate_en || p.governorate_ar || '';
 
-  // محاولة 1: عنوان كامل
+  // لو فيه عنوان تفصيلي → جرب Nominatim
   if (address) {
     await sleep(1100);
+    const governorate = p.governorate_en || p.governorate_ar || '';
     const r = await nominatim([address, city, governorate, 'Egypt'].filter(Boolean).join(', '));
     if (r) return { ...r, method: 'full address' };
   }
 
-  // محاولة 2: مدينة + محافظة
-  if (city || governorate) {
+  // لو فيه مدينة بس من غير عنوان → جرب Nominatim بالمدينة
+  if (city && !address) {
     await sleep(1100);
+    const governorate = p.governorate_en || p.governorate_ar || '';
     const r = await nominatim([city, governorate, 'Egypt'].filter(Boolean).join(', '));
     if (r) return { ...r, method: 'city/gov' };
   }
 
-  // محاولة 3: إحداثيات المحافظة (إنجليزي + عربي)
+  // مفيش عنوان ولا مدينة → روح للـ fallback مباشرة (بدون Nominatim)
   const coords = getGovernorateCoords(p.governorate_en, p.governorate_ar);
   if (coords) return { ...coords, method: 'governorate fallback' };
 
