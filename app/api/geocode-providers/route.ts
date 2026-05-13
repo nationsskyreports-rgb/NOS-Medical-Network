@@ -63,10 +63,10 @@ function getGovernorateCoords(govEn: string, govAr: string): { lat: number; lng:
   for (const g of GOVERNORATE_COORDS) {
     for (const key of g.keys) {
       const normalizedKey = normalizeAr(key);
-      if (searchEn && (searchEn.includes(key.toLowerCase()) || key.toLowerCase().includes(searchEn))) {
+      if (searchEn && searchEn.length > 2 && (searchEn.includes(key.toLowerCase()) || key.toLowerCase().includes(searchEn))) {
         return { lat: g.lat, lng: g.lng };
       }
-      if (searchAr && (searchAr.includes(normalizedKey) || normalizedKey.includes(searchAr))) {
+      if (searchAr && searchAr.length > 2 && (searchAr.includes(normalizedKey) || normalizedKey.includes(searchAr))) {
         return { lat: g.lat, lng: g.lng };
       }
     }
